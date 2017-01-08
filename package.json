@@ -1,0 +1,17 @@
+{
+  "name": "mailparser2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "addressparser": "^1.0.1",
+    "libmime": "^3.0.0",
+    "mailsplit": "^3.1.2",
+    "punycode": "^1.4.1"
+  }
+}

@@ -1,0 +1,88 @@
+Delivered-To: andris.reinman@gmail.com
+Received: by 10.157.4.72 with SMTP id 66csp4259432otc;
+        Wed, 4 Jan 2017 02:59:19 -0800 (PST)
+X-Received: by 10.25.43.4 with SMTP id r4mr4237878lfr.76.1483527559801;
+        Wed, 04 Jan 2017 02:59:19 -0800 (PST)
+Return-Path: <SRS0=b521=YS=zone.ee=andris@srs7.zonevs.eu>
+Received: from srs7.zonevs.eu (srs7.zonevs.eu. [217.146.68.197])
+        by mx.google.com with ESMTPS id 192si42408288lfa.168.2017.01.04.02.59.19
+        for <andris.reinman@gmail.com>
+        (version=TLS1_2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Wed, 04 Jan 2017 02:59:19 -0800 (PST)
+Received-SPF: pass (google.com: best guess record for domain of srs0=b521=ys=zone.ee=andris@srs7.zonevs.eu designates 217.146.68.197 as permitted sender) client-ip=217.146.68.197;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@zonevs.eu;
+       dkim=pass header.i=@srs7.zonevs.eu;
+       spf=pass (google.com: best guess record for domain of srs0=b521=ys=zone.ee=andris@srs7.zonevs.eu designates 217.146.68.197 as permitted sender) smtp.mailfrom=SRS0=b521=YS=zone.ee=andris@srs7.zonevs.eu;
+       dmarc=fail (p=NONE dis=NONE) header.from=zone.ee
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=zonevs.eu;
+ q=dns/txt; s=oct2016; bh=uVzJZNMAc91a/LsO6khZtXy4SKtxd8TbOCOa1R8W7e0=;
+ h=from:subject:date:message-id:to:mime-version:content-type;
+ b=PGbvz8XWLBf0iBHHvLyv8dGnW/WX3GV7bbOQJd3w+QOZKwV/gP8YGGvAVm/MVyVgbOu4Gm9ey
+ 4j591mO7QoJNHy5vGx/2qDK9+s4NX7ZskAv8zwC67FQV6IZTxIjnYYi47iqCjYlrv1ZmJfnLtOt
+ wKhzyIlXoaWMq2OhyR2aGNU+q3HWSwYjGcZ1S2BLwiOzcf3435G9/2bpAv5cy6i8MlM7Az6LV1Q
+ VsI0Na36GOuU0GOeqf/YzeVu4cusNC7KRIzxmrFfo5oE48xHVHYyq+u822AgmI36OeAb8YwosN3
+ w0PvIZplMfORGuHOL0QNjQXBaW/rbg9CXAOKHor9F3Vg==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=srs7.zonevs.eu;
+ q=dns/txt; s=oct2016; bh=uVzJZNMAc91a/LsO6khZtXy4SKtxd8TbOCOa1R8W7e0=;
+ h=from:subject:date:message-id:to:mime-version:content-type;
+ b=h7+MPNb66bqeCJpXifl8Lbe9Hobipv0rPN09mCIplCSwTL45xy0zGuo9QD0B3o2Am6FFGX0Qw
+ CaQURDdammFmo4zPKMN90Lol3eatgL1eRgy3n6Wefhtccmalt68gJ4apb8Z/Mr7l9wkaRwxfUyO
+ M8VmHK4SukgxUO1z+yrcL5RYWn7FsnRXNaWcmT52PpW0gURUknCeLzZM0uXT/3siisOprefm6Ay
+ +J5MTo89c9H598odUlACQIAIYLFVFQrc46uCKWr2k40FEdt6xBpZUMNFLgWv3pNmvMazTHhDHIP
+ IfGaSTJLGhsTfMwujFLYgKmn5rHIPhvRYrpjVt5L3GsA==
+Received: from host29.guest.zone.eu [217.146.66.6]
+ by srs7.zonevs.eu (ZoneMTA Forwarder) with ESMTP id 15969221727000d685.001
+ for <andris.reinman@gmail.com>;
+ Wed, 04 Jan 2017 10:59:18 +0000
+X-Zone-Loop: ddaf84e65cf5696ef060cb2a419484ee4ab725cd8649
+Content-Type: multipart/mixed;
+ boundary="----sinikael-?=_1-14835275588170.7731175635800145"
+From: Andris Kreata <andris@zone.ee>
+To: Andris Reinman <andris.reinman@gmail.com>, andris.reinman@hotmail.com
+Subject: test
+Message-ID: <206d7754-a135-f215-6602-fab1af2a71b1@zone.ee>
+X-Mailer: nodemailer (2.7.0; +https://nodemailer.com/;
+ SMTP/2.7.2[client:2.12.0])
+Date: Wed, 04 Jan 2017 10:59:18 +0000
+MIME-Version: 1.0
+X-Zone-Spam-Resolution: no action
+X-Zone-Spam-Status: No, score=1.841288, required=15,
+ tests=[R_MISSING_CHARSET=2.5, MID_RHS_MATCH_FROM=0, TO_DN_SOME=0,
+ FREEMAIL_TO=0, BAYES_HAM=-0.658711, FROM_HAS_DN=0, HAS_ATTACHMENT=0,
+ FROM_EQ_ENVFROM=0, MIME_GOOD=-0.1, R_DKIM_NA=0, RCVD_COUNT_0=0,
+ RCPT_COUNT_2=0, DMARC_POLICY_SOFTFAIL=0.1]
+X-Original-Sender: andris@zone.ee
+X-Zone-Forwarded-For: andris@zone.ee
+X-Zone-Forwarded-To: andris.reinman@gmail.com
+
+------sinikael-?=_1-14835275588170.7731175635800145
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+
+test
+------sinikael-?=_1-14835275588170.7731175635800145
+Content-Type: application/pdf; name=E(E)E.pdf
+X-Random-Content: YES
+Content-Disposition: attachment; filename="E(E)E.pdf"
+Content-Transfer-Encoding: base64
+
+pxUN2QMfvzbEwSTirleh0MD4DCOPf0Po1KxbbzQ7n7LM/d2g2NUaRamukek2ANo7RZYL5EO0yV5a
+iUKTBPyk51Y95tgu8BpCzSwrfkO3PGJusYugN6mP7234NctWH8CeoZTKx0o1vwAxS5zsli02C7z1
+bab2/kb6f4lBKY77mKdyiAe+9d0GYgfRl5w1SMj0fuDw49MQhgCdToIo1iB0+WUvpo4wZi+ypy6i
+B82G4d9AohrRaCKuiMA8EkLwop+qMC/Xebk/0Sm3v0S1xeDnNuqKuRzZE07gaVBMlooh2b86ur+2
+twJYFmFca6peQrpGhdSwnvvKBxMlYZsCrOb66z0mIAJvJRSQPJ5NVnAvJ9H2/W8W73ucgxIHqJTt
+ojQiVKmWy4CepN94wXGpuKZluoQw9dK+0P4//KqzYxLwQlSx14lNQEhquqjMs2q3nyqlKJtuRAH4
+e48IivRM8z8+sKalrBty/DkPOBP9/IxHTuFnzsvWNGcHVlgiNYM+oJ8W56KkazDDqMy0SSohIBcm
+VKy4eRW+EgzsrUiJRcZRCuIye0m8KOZMOMr2FN7S8M9e8J2lLeXukqMxLc8EVLKbr1swOqawBdfK
+cLm44StK3Zm/le+7WK4IHiMziZ22gh5zDAb5RCTl0aAG/JRPQFl492g+QlLdmimggCRRatUd8H+7
+cFWhB8USabqIsIsm+j7sw9zXZUrDVpcHZiSXx6W/ag3yBuDN4ZxlYmcpHqEFHDyuxexkSlwSn5o/
+CEgYbp/mfyYSut+lX/rDhFKKM2RTf4wRcc/YPM9/jM5Z3uowtDDrFP6CjRAgl9IzEEHszw43qwSs
+sTszAl1vO8VU8JYK7pyRr6O1DFESLG10TjtyP8VQMCf1VbvHwVPxgJYX91C3p9rBIucBB48k0H7n
+o4STRk8+mRANC5jIY3J6noaoGYxZngEz3G7fJrHFm3wmRMDCWFmmBQ0+X5OFegdrPrPfIzKsTtdb
+hD9xCnT/nQPJpv0g1ziulW9AuD3xIVguJ9UwoBCU0yoPErL577JEu3YRxIqOXt8gbfMiXGvv1j1q
+NDMYkPMSbcFErmnZPFVGzAPcGpmiCQjFFH0mqmeeeMCKcZhtPivjFI93U6MwIvcz55HAC6u4HOrM
++IJ3pZ3CqCmEUPdCRcRVWedWez/MXLknIMNOljL+TMvhf0ETk3tmv0Nwo2X5mqoLZrqGsXCxrrUS
+dAlzAwHNCvrkyXRjmi1OM1ewXXa3vJHHwGePNPMUtPuVaKu80yRh0dfpDmOjspQVOt9hDkFuVMu3
+63p4tli+ixiRwap2AdpoZgzVIEJRT2zluKr/Ltihn7obJ4QK6NLlHdmWTcs+EzBRSY6IdX01Sw==
+------sinikael-?=_1-14835275588170.7731175635800145--
