@@ -1,3 +1,5 @@
+/* eslint no-console:0 */
+
 'use strict';
 
 const util = require('util');
@@ -5,7 +7,7 @@ const fs = require('fs');
 const Mailparser2 = require('../lib/mailparser2.js');
 
 let parser = new Mailparser2();
-let input = fs.createReadStream(__dirname + '/large_out.eml');
+let input = fs.createReadStream(__dirname + '/mimetorture.eml');
 
 input.pipe(parser);
 
@@ -20,6 +22,9 @@ parser.on('data', data => {
             console.log('----');
             console.log(data[key]);
         });
+        fs.writeFileSync('/Users/andris/Desktop/out.html', data.html || '');
+        fs.writeFileSync('/Users/andris/Desktop/out-text.html', data.textAsHtml || '');
+        fs.writeFileSync('/Users/andris/Desktop/out.txt', data.text || '');
     }
 
     if (data.type === 'attachment') {
@@ -39,11 +44,11 @@ parser.on('data', data => {
 
         data.content.on('end', () => {
             console.log('%s: %s B', 'size', size);
-            setTimeout(() => data.release(), 100);
+            // attachment needs to be released before next chunk of
+            // message data can be processed
+            data.release();
         });
     }
-    //attachment.release();
-    //attachment.content.pipe(process.stdout);
 });
 
 parser.on('end', () => {
