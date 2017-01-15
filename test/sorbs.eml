@@ -1,0 +1,254 @@
+Delivered-To: andris.reinman@gmail.com
+Received: by 10.157.4.72 with SMTP id 66csp654839otc;
+        Sun, 8 Jan 2017 19:46:36 -0800 (PST)
+X-Received: by 10.223.163.20 with SMTP id c20mr10135977wrb.40.1483933595908;
+        Sun, 08 Jan 2017 19:46:35 -0800 (PST)
+Return-Path: <mailop-bounces@mailop.org>
+Received: from chilli.nosignal.org (chilli.nosignal.org. [2001:41c8:51:83:feff:ff:fe00:a0b])
+        by mx.google.com with ESMTP id q66si9065668wma.90.2017.01.08.19.46.33;
+        Sun, 08 Jan 2017 19:46:35 -0800 (PST)
+Received-SPF: neutral (google.com: 2001:41c8:51:83:feff:ff:fe00:a0b is neither permitted nor denied by best guess record for domain of mailop-bounces@mailop.org) client-ip=2001:41c8:51:83:feff:ff:fe00:a0b;
+Authentication-Results: mx.google.com;
+       dkim=neutral (body hash did not verify) header.i=@sendgrid.com;
+       spf=neutral (google.com: 2001:41c8:51:83:feff:ff:fe00:a0b is neither permitted nor denied by best guess record for domain of mailop-bounces@mailop.org) smtp.mailfrom=mailop-bounces@mailop.org
+Received: from localhost ([127.0.0.1] helo=chilli.nosignal.org)
+	by chilli.nosignal.org with esmtp (Exim 4.84_2)
+	(envelope-from <mailop-bounces@mailop.org>)
+	id 1cQQmb-0002oB-18; Mon, 09 Jan 2017 03:38:06 +0000
+Received: from mail-qk0-x22e.google.com ([2607:f8b0:400d:c09::22e])
+ by chilli.nosignal.org with esmtps (TLS1.2:ECDHE_RSA_AES_128_GCM_SHA256:128)
+ (Exim 4.84_2) (envelope-from <luke.martinez@sendgrid.com>)
+ id 1cQQmV-0002o5-WB
+ for mailop@mailop.org; Mon, 09 Jan 2017 03:38:01 +0000
+Received: by mail-qk0-x22e.google.com with SMTP id 11so30529989qkl.3
+ for <mailop@mailop.org>; Sun, 08 Jan 2017 19:38:21 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=sendgrid.com; s=ga1;
+ h=mime-version:in-reply-to:references:from:date:message-id:subject:to;
+ bh=GTr4FsWNM9Qje2T4ItGLvnik9TP5S7pIyTNGpTVnYjM=;
+ b=eZLHuOBA829vl1rOavRzewSB2mI175Nhdr747lI4tru72qhwcX0w9Nm0LZrT0WO8t/
+ IPtc0RPxOcM1+QigoDY03/v5yX8Gsbm2r9g9ebh/MDf6imEWM1ShlTTjF2dmWyyYOGB6
+ NGe5lDvkbFixrhVJrkYQlPYVA6gX819BsK9hk=
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=1e100.net; s=20161025;
+ h=x-gm-message-state:mime-version:in-reply-to:references:from:date
+ :message-id:subject:to;
+ bh=GTr4FsWNM9Qje2T4ItGLvnik9TP5S7pIyTNGpTVnYjM=;
+ b=iz6agiteNfRZV6vuhDggbic58TABpGkSzO+fRKpfiwmNQdBR1Gaq7VkdmwDGqAMROw
+ Drpg6ysLmD4eFUCe3Nh6dCz0VOu05NqJDO5c3L8yypGQ16CUvCYi+oZTAwKyfVR5XZOw
+ vOITm/iYuNpFkcR/VYnjqbVo5jC0bjYDrWADg9LYNFAgkeX697Synz/nWpzcApJ2Iptm
+ chDwnooFJzHbtnZqgiWBO30oHAu4UCJf360h7SKS3j3mVDupHF7O0DPF5AqyZqrYbeQn
+ R5qVYhROvvtTeEjtYgQqOXXmrdCL1gNtjYqa8g2fpG99Uh7XLSPMx02zRK6/nbOaLmcn
+ ctew==
+X-Gm-Message-State: AIkVDXLtdFnkNVxnPjmFGBt/HZclO7OfYW8cFzKSMWzO/V/u1OGcL08mP9i5FOdijrGhUukX4bSZeTx9egy0O8GM
+X-Received: by 10.55.105.4 with SMTP id e4mr81675945qkc.273.1483933095370;
+ Sun, 08 Jan 2017 19:38:15 -0800 (PST)
+MIME-Version: 1.0
+Received: by 10.200.56.162 with HTTP; Sun, 8 Jan 2017 19:37:44 -0800 (PST)
+In-Reply-To: <96295575-88f3-108d-41fe-a7cd1b917420@keycodes.com>
+References: <CAOcFnQCz6h65G=HqnZwMuMVg5CqNu51L0XhcoR0Y7_NwvvWBxA@mail.gmail.com>
+ <CALd+dcfRU0Eaokqv7C42p3WExFd2JzRgk9f7HZuxGKeB3=97SQ@mail.gmail.com>
+ <20170106160908.GA32607@gsp.org> <052e7ebc1e6c3c28f4cb729abb5d55b2@ausics.net>
+ <DB24E853-1606-454B-B3D8-C4821A71A985@isipp.com>
+ <18f9882c-439d-c36c-284e-9f0a840f2ab5@vex.net>
+ <491974c9-e65e-01fd-3259-ae4faab7388c@gmx.com>
+ <e1d348e2-4001-1297-c149-166dc1cdd1b4@keycodes.com>
+ <08d081fafab4487f9ea7ef28ac960535@ehlo.ad.dataspindle.com>
+ <96295575-88f3-108d-41fe-a7cd1b917420@keycodes.com>
+Date: Sun, 8 Jan 2017 20:37:44 -0700
+Message-ID: <CADknbTk4iVLTPD6-fDngRNAKMQGNxR_VwCEFD7eBN5uN7og55Q@mail.gmail.com>
+To: mailop <mailop@mailop.org>
+Subject: Re: [mailop] SORBS help
+X-BeenThere: mailop@mailop.org
+X-Mailman-Version: 2.1.18
+Precedence: list
+List-Id: For mail operators <mailop.mailop.org>
+List-Unsubscribe: <https://chilli.nosignal.org/cgi-bin/mailman/options/mailop>, 
+ <mailto:mailop-request@mailop.org?subject=unsubscribe>
+List-Archive: <https://chilli.nosignal.org/cgi-bin/mailman/private/mailop/>
+List-Post: <mailto:mailop@mailop.org>
+List-Help: <mailto:mailop-request@mailop.org?subject=help>
+List-Subscribe: <https://chilli.nosignal.org/cgi-bin/mailman/listinfo/mailop>, 
+ <mailto:mailop-request@mailop.org?subject=subscribe>
+From: Luke Martinez via mailop <mailop@mailop.org>
+Reply-To: Luke Martinez <luke.martinez@sendgrid.com>
+Content-Type: multipart/mixed; boundary="===============8309140931775933436=="
+Errors-To: mailop-bounces@mailop.org
+Sender: "mailop" <mailop-bounces@mailop.org>
+
+--===============8309140931775933436==
+Content-Type: multipart/alternative; boundary=001a114ff2c20538610545a1195e
+
+--001a114ff2c20538610545a1195e
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Receivers rely on RBLs to help prevent unwanted mail from getting through
+to recipients. There is (or should be) some understanding that utilizing an
+RBL will result in bad mail being blocked, and good mail not being blocked.
+In this respect, SORBS is pretty good. Plenty of false positives (by that I
+mean good senders getting listed, not erroneous listings), but the reason
+for listing is almost always very predictable. Not to mention, as Michelle
+said, even by default there is enough info from SORBS to find the source of
+the problem.
+
+On another note...Saying "RBLs don't block mail" is a fun thing to say to
+win an argument, but it is a lot like interrupting someone to say, "You
+know technically, a tomato is a fruit." Yeah yeah. We get it. Very cute.
+
+On Sun, Jan 8, 2017 at 6:53 PM, Jay Hennigan <mailop-list@keycodes.com>
+wrote:
+
+> On 1/8/17 5:11 PM, David Sgro, Dataspindle wrote:
+>
+>> I have always hated the argument that "RBL's don=E2=80=99t block email".
+>>
+>
+> Haters gotta hate. :-) Happens to be true, though.
+>
+> While technically its true, you being listed in the RBL is 100% the cause
+>> of your problem and it is not the ISP/receiving server admin's fault. It
+>> makes no sense and would be futile to contact everyone you email, see if
+>> they use a specific RBL, and then get them to put in an exception for yo=
+u.
+>> I know no one here is advocating that, but im just making my point.
+>>
+>
+> Having a bad credit score is 100% of your problem if you can't get a loan=
+,
+> and 99% of the time your bad credit score isn't the fault of the credit
+> bureau. You earned that bad credit score (or RBL listing).
+>
+> And if a particular credit bureau is known for sloppy work, then lenders
+> won't use them. On the other hand, if they're mostly accurate, then they
+> will. Just like SPEWS vs. SORBS.
+>
+> Saying RBL's aren=E2=80=99t blocking email is like saying its not the hea=
+ters
+>> fault your gas bill is higher in winter. Technically you don=E2=80=99t n=
+eed to turn
+>> it on, but that=E2=80=99s not practical.
+>>
+>
+> It's not the heater's fault. The blame clearly lies with the tilt of the
+> earth's axis. :-)
+>
+> You could wear a jacket, or build a fire in the wood stove, or invest in =
+a
+> more efficient heater. Or suffer with the cold.
+>
+> Just as you could write your own filters, use just SpamAssassin, or choos=
+e
+> a better RBL for your situation. Or suffer with the spam.
+>
+>
+>
+> _______________________________________________
+> mailop mailing list
+> mailop@mailop.org
+> https://chilli.nosignal.org/cgi-bin/mailman/listinfo/mailop
+>
+
+
+
+--=20
+
+Luke Martinez
+Team Lead | Email Delivery
+520.400.5693
+
+--001a114ff2c20538610545a1195e
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr">Receivers rely on RBLs to help prevent unwanted mail from =
+getting through to recipients. There is (or should be) some understanding t=
+hat utilizing an RBL will result in bad mail being blocked, and good mail n=
+ot being blocked. In this respect, SORBS is pretty good. Plenty of false po=
+sitives (by that I mean good senders getting listed, not erroneous listings=
+), but the reason for listing is almost always very predictable. Not to men=
+tion, as Michelle said, even by default there is enough info from SORBS to =
+find the source of the problem. =C2=A0<div><br></div><div>On another note..=
+.Saying &quot;RBLs don&#39;t block mail&quot; is a fun thing to say to win =
+an argument, but it is a lot like interrupting someone to say, &quot;You kn=
+ow technically, a tomato is a fruit.&quot; Yeah yeah. We get it. Very cute.=
+=C2=A0</div></div><div class=3D"gmail_extra"><br><div class=3D"gmail_quote"=
+>On Sun, Jan 8, 2017 at 6:53 PM, Jay Hennigan <span dir=3D"ltr">&lt;<a href=
+=3D"mailto:mailop-list@keycodes.com" target=3D"_blank">mailop-list@keycodes=
+.com</a>&gt;</span> wrote:<br><blockquote class=3D"gmail_quote" style=3D"ma=
+rgin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><span class=3D=
+"">On 1/8/17 5:11 PM, David Sgro, Dataspindle wrote:<br>
+<blockquote class=3D"gmail_quote" style=3D"margin:0 0 0 .8ex;border-left:1p=
+x #ccc solid;padding-left:1ex">
+I have always hated the argument that &quot;RBL&#39;s don=E2=80=99t block e=
+mail&quot;.<br>
+</blockquote>
+<br></span>
+Haters gotta hate. :-) Happens to be true, though.<span class=3D""><br>
+<br>
+<blockquote class=3D"gmail_quote" style=3D"margin:0 0 0 .8ex;border-left:1p=
+x #ccc solid;padding-left:1ex">
+While technically its true, you being listed in the RBL is 100% the cause o=
+f your problem and it is not the ISP/receiving server admin&#39;s fault. It=
+ makes no sense and would be futile to contact everyone you email, see if t=
+hey use a specific RBL, and then get them to put in an exception for you. I=
+ know no one here is advocating that, but im just making my point.<br>
+</blockquote>
+<br></span>
+Having a bad credit score is 100% of your problem if you can&#39;t get a lo=
+an, and 99% of the time your bad credit score isn&#39;t the fault of the cr=
+edit bureau. You earned that bad credit score (or RBL listing).<br>
+<br>
+And if a particular credit bureau is known for sloppy work, then lenders wo=
+n&#39;t use them. On the other hand, if they&#39;re mostly accurate, then t=
+hey will. Just like SPEWS vs. SORBS.<span class=3D""><br>
+<br>
+<blockquote class=3D"gmail_quote" style=3D"margin:0 0 0 .8ex;border-left:1p=
+x #ccc solid;padding-left:1ex">
+Saying RBL&#39;s aren=E2=80=99t blocking email is like saying its not the h=
+eaters fault your gas bill is higher in winter. Technically you don=E2=80=
+=99t need to turn it on, but that=E2=80=99s not practical.<br>
+</blockquote>
+<br></span>
+It&#39;s not the heater&#39;s fault. The blame clearly lies with the tilt o=
+f the earth&#39;s axis. :-)<br>
+<br>
+You could wear a jacket, or build a fire in the wood stove, or invest in a =
+more efficient heater. Or suffer with the cold.<br>
+<br>
+Just as you could write your own filters, use just SpamAssassin, or choose =
+a better RBL for your situation. Or suffer with the spam.<div class=3D"HOEn=
+Zb"><div class=3D"h5"><br>
+<br>
+<br>
+______________________________<wbr>_________________<br>
+mailop mailing list<br>
+<a href=3D"mailto:mailop@mailop.org" target=3D"_blank">mailop@mailop.org</a=
+><br>
+<a href=3D"https://chilli.nosignal.org/cgi-bin/mailman/listinfo/mailop" rel=
+=3D"noreferrer" target=3D"_blank">https://chilli.nosignal.org/cg<wbr>i-bin/=
+mailman/listinfo/mailop</a><br>
+</div></div></blockquote></div><br><br clear=3D"all"><div><br></div>-- <br>=
+<div class=3D"gmail_signature" data-smartmail=3D"gmail_signature"><div dir=
+=3D"ltr"><div><div dir=3D"ltr"><div><div dir=3D"ltr"><div><div dir=3D"ltr">=
+<img src=3D"https://sendgrid.com/brand/sg-logo-email.png" width=3D"96" heig=
+ht=3D"17" style=3D"color:rgb(136,136,136);font-size:12.8px"><br><div><div><=
+span>Luke Martinez</span></div><div><span>Team Lead | Email Delivery</span>=
+</div><div><span>520.400.5693</span></div></div></div></div></div></div></d=
+iv></div></div></div>
+</div>
+
+--001a114ff2c20538610545a1195e--
+
+
+--===============8309140931775933436==
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+Content-Disposition: inline
+
+X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX18KbWFpbG9wIG1h
+aWxpbmcgbGlzdAptYWlsb3BAbWFpbG9wLm9yZwpodHRwczovL2NoaWxsaS5ub3NpZ25hbC5vcmcv
+Y2dpLWJpbi9tYWlsbWFuL2xpc3RpbmZvL21haWxvcAo=
+
+--===============8309140931775933436==--
+
