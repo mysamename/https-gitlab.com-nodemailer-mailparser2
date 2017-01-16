@@ -105,3 +105,62 @@ Attachment objects have the following structure:
 const MailParser2 = require('@nodemailer/mailparser2').MailParser2;
 let parser = new MailParser2()
 ```
+
+### Event 'headers'
+
+The parser emits 'headers' once message headers have been processed. The headers object is a Map. Different header keys have different kind of values, for example address headers have the address object/array as the value while subject value is string.
+
+Header keys in the Map are lowercase.
+
+```javascript
+parser.on('headers', headers = {
+    console.log(headers.get('subject'));
+});
+```
+
+### Event 'data'
+
+Event 'data' or 'readable' emits message content objects. The type of the object can be determine by the `type` property. Currently there are two kind of data objects
+
+  * 'attachment' indicates that this object is an attachment
+  * 'text' indicates that this object includes the html and text parts of the message. This object is emitted once and it includes both values
+
+### attachment object
+
+Attachment object is the same as in `simpleParser` except that `content` is not a buffer but a stream. Additionally there's a method `release()` that must be called once you have processed the attachment. The property `related` is set after message processing is ended, so at the `data` event this value is not yet available.
+
+```javascript
+parser.on('data', data => {
+    if(data.type === 'attachment'){
+        console.log(data.filename);
+        data.content.pipe(process.stdout);
+        data.on('end', ()=>data.release());
+    }
+});
+```
+
+If you do not call `release()` then the message processing is paused.
+
+### text object
+
+Text object has the following keys:
+
+  * **text** includes the plaintext version of the message. Is set if the message has at least one 'text/plain' node
+  * **html** includes the HTML version of the message. Is set if the message has at least one 'text/html' node
+  * **textAsHtml** includes the plaintext version of the message in HTML format. Is set if the message has at least one 'text/plain' node.
+
+```javascript
+parser.on('data', data => {
+    if(data.type === 'text'){
+        console.log(data.html);
+    }
+});
+```
+
+## Issues
+
+Charset decoding is handled using [node-iconv](https://github.com/ashtuchkin/iconv-lite) that is missing some charsets.
+
+## License
+
+© 2017 Kreata OÜ
