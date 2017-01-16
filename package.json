@@ -1,6 +1,5 @@
 {
   "name": "@nodemailer/mailparser2",
-  "private": true,
   "version": "1.0.0",
   "description": "Parse emails",
   "main": "index.js",
