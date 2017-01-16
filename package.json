@@ -1,19 +1,20 @@
 {
-  "name": "mailparser2",
+  "name": "@nodemailer/mailparser2",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Parse emails",
+  "main": "lib/mailparser2.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "grunt"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Andris Reinman",
+  "license": "UNLICENSED",
   "dependencies": {
-    "addressparser": "^1.0.1",
-    "html-to-text": "^3.0.0",
-    "iconv-lite": "^0.4.15",
-    "libmime": "^3.1.0",
-    "mailsplit": "^3.1.2",
-    "marked": "^0.3.6"
+    "addressparser": "1.0.1",
+    "he": "1.1.0",
+    "html-to-text": "3.0.0",
+    "iconv-lite": "0.4.15",
+    "libmime": "3.1.0",
+    "mailsplit": "3.1.2",
+    "marked": "0.3.6"
   }
 }
