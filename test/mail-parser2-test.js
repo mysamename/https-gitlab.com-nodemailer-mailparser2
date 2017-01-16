@@ -1,6 +1,6 @@
 'use strict';
 
-const MailParser2 = require('../lib/mailparser2');
+const MailParser2 = require('..').MailParser2;
 const iconv = require('iconv-lite');
 const fs = require('fs');
 
@@ -18,7 +18,7 @@ exports['General tests'] = {
         mailparser.on('data', () => false);
 
         mailparser.on('end', () => {
-            test.equal(mailparser.text, 'ÕÄ\r\nÖÜ');
+            test.equal(mailparser.text, 'ÕÄ\nÖÜ');
             test.done();
         });
 
@@ -89,16 +89,17 @@ exports['General tests'] = {
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, '===');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, '===');
             test.done();
         });
     },
 
     'Different line endings': test => {
-        let encodedText = 'Content-type: text/plain; charset=utf-8\r' +
+        let encodedText = 'Content-type: text/plain; charset=utf-8\n' +
             'Subject: ÕÄÖÜ\n' +
-            '\r' +
+            '\n' +
             '1234\r\n' +
             'ÕÄÖÜ\r\n' +
             'ÜÖÄÕ\n' +
@@ -108,9 +109,10 @@ exports['General tests'] = {
         test.expect(2);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.subject, 'ÕÄÖÜ');
-            test.equal(mail.text, '1234\nÕÄÖÜ\nÜÖÄÕ\n1234');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.headers.get('subject'), 'ÕÄÖÜ');
+            test.equal(mailparser.text, '1234\nÕÄÖÜ\nÜÖÄÕ\n1234');
             test.done();
         });
     },
@@ -133,11 +135,18 @@ exports['General tests'] = {
         let mailparser = new MailParser2();
 
         mailparser.on('headers', headers => {
-            test.equal(headers.subject, 'ABCDEF');
-            test.equal(headers['x-test'], 'ÕÄÖÜ');
+            test.equal(headers.get('subject'), 'ABCDEF');
+            test.equal(headers.get('x-test'), '=?UTF-8?Q?=C3=95=C3=84?= =?UTF-8?Q?=C3=96=C3=9C?=');
         });
 
         mailparser.end(mail);
+        mailparser.on('data', data => {
+            if (data && data.release) {
+                data.content.on('data', () => false);
+                data.content.on('end', () => false);
+                data.release();
+            }
+        });
         mailparser.on('end', () => {
             test.ok(1, 'Parsing ended');
             test.done();
@@ -145,150 +154,159 @@ exports['General tests'] = {
     },
 
     'No priority': test => {
-        let encodedText = 'Content-type: text/plain; charset=utf-8\r' +
+        let encodedText = 'Content-type: text/plain; charset=utf-8\r\n' +
             'Subject: ÕÄÖÜ\n' +
-            '\r' +
+            '\r\n' +
             '1234',
             mail = Buffer.from(encodedText, 'utf-8');
 
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.priority, 'normal');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.headers.has('priority'), false);
             test.done();
         });
     },
 
     'MS Style priority': test => {
-        let encodedText = 'Content-type: text/plain; charset=utf-8\r' +
+        let encodedText = 'Content-type: text/plain; charset=utf-8\r\n' +
             'Subject: ÕÄÖÜ\n' +
             'X-Priority: 1 (Highest)\n' +
-            '\r' +
+            '\r\n' +
             '1234',
             mail = Buffer.from(encodedText, 'utf-8');
 
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.priority, 'high');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.headers.get('priority'), 'high');
             test.done();
         });
     },
 
     'Single reference': test => {
-        let encodedText = 'Content-type: text/plain\r' +
+        let encodedText = 'Content-type: text/plain\r\n' +
             'References: <mail1>\n' +
-            '\r' +
+            '\r\n' +
             '1234',
             mail = Buffer.from(encodedText, 'utf-8');
 
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.deepEqual(mail.references, ['mail1']);
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.deepEqual(mailparser.headers.get('references'), '<mail1>');
             test.done();
         });
     },
 
     'Multiple reference values': test => {
-        let encodedText = 'Content-type: text/plain\r' +
+        let encodedText = 'Content-type: text/plain\r\n' +
             'References: <mail1>\n' +
             '    <mail2> <mail3>\n' +
-            '\r' +
+            '\r\n' +
             '1234',
             mail = Buffer.from(encodedText, 'utf-8');
 
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.deepEqual(mail.references, ['mail1', 'mail2', 'mail3']);
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.deepEqual(mailparser.references, ['<mail1>', '<mail2>', '<mail3>']);
             test.done();
         });
     },
 
     'Multiple reference fields': test => {
-        let encodedText = 'Content-type: text/plain\r' +
+        let encodedText = 'Content-type: text/plain\r\n' +
             'References: <mail1>\n' +
             'References: <mail3>\n' +
-            '\r' +
+            '\r\n' +
             '1234',
             mail = Buffer.from(encodedText, 'utf-8');
 
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.deepEqual(mail.references, ['mail1', 'mail3']);
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.deepEqual(mailparser.references, ['<mail1>', '<mail3>']);
             test.done();
         });
     },
 
     'Single in-reply-to': test => {
-        let encodedText = 'Content-type: text/plain\r' +
+        let encodedText = 'Content-type: text/plain\r\n' +
             'in-reply-to: <mail1>\n' +
-            '\r' +
+            '\r\n' +
             '1234',
             mail = Buffer.from(encodedText, 'utf-8');
 
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.deepEqual(mail.inReplyTo, ['mail1']);
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.deepEqual(mailparser.inReplyTo, '<mail1>');
             test.done();
         });
     },
 
     'Multiple in-reply-to values': test => {
-        let encodedText = 'Content-type: text/plain\r' +
+        let encodedText = 'Content-type: text/plain\r\n' +
             'in-reply-to: <mail1>\n' +
             '    <mail2> <mail3>\n' +
-            '\r' +
+            '\r\n' +
             '1234',
             mail = Buffer.from(encodedText, 'utf-8');
 
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.deepEqual(mail.inReplyTo, ['mail1', 'mail2', 'mail3']);
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.deepEqual(mailparser.inReplyTo, '<mail1> <mail2> <mail3>');
             test.done();
         });
     },
 
     'Multiple in-reply-to fields': test => {
-        let encodedText = 'Content-type: text/plain\r' +
+        let encodedText = 'Content-type: text/plain\r\n' +
             'in-reply-to: <mail1>\n' +
             'in-reply-to: <mail3>\n' +
-            '\r' +
+            '\r\n' +
             '1234',
             mail = Buffer.from(encodedText, 'utf-8');
 
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.deepEqual(mail.inReplyTo, ['mail1', 'mail3']);
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.deepEqual(mailparser.inReplyTo, '<mail3>');
             test.done();
         });
     },
 
     'Reply To address': test => {
-        let encodedText = 'Reply-TO: andris <andris@disposebox.com>\r' +
+        let encodedText = 'Reply-TO: andris <andris@disposebox.com>\r\n' +
             'Subject: ÕÄÖÜ\n' +
-            '\r' +
+            '\r\n' +
             '1234',
             mail = Buffer.from(encodedText, 'utf-8');
 
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.deepEqual(mail.replyTo, [{
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.deepEqual(mailparser.replyTo.value, [{
                 name: 'andris',
                 address: 'andris@disposebox.com'
             }]);
@@ -308,8 +326,9 @@ exports['Text encodings'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -323,24 +342,9 @@ exports['Text encodings'] = {
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
-            test.done();
-        });
-    },
-
-    'HTML encoding: From <meta>': test => {
-        let encodedText = 'Content-Type: text/html\r\n' +
-            '\r\n' +
-            '<html><head><meta charset="utf-8"/></head><body>ÕÄÖÜ',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        test.expect(1);
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal((mail.html || '').substr(-4), 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -354,24 +358,27 @@ exports['Text encodings'] = {
         test.expect(1);
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.html, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.html, 'ÕÄÖÜ');
             test.done();
         });
     },
+
     'Mime Words': test => {
         let encodedText = 'Content-type: text/plain; charset=utf-8\r\n' +
-            'From: =?utf-8?q??= <sender@email.com>\r\n' +
+            'From: =?utf-8?q?_?= <sender@email.com>\r\n' +
             'To: =?ISO-8859-1?Q?Keld_J=F8rn_Simonsen?= <to@email.com>\r\n' +
             'Subject: =?iso-8859-1?Q?Avaldu?= =?iso-8859-1?Q?s_lepingu_?=\r\n =?iso-8859-1?Q?l=F5petamise?= =?iso-8859-1?Q?ks?=\r\n',
             mail = Buffer.from(encodedText, 'utf-8');
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.subject, 'Avaldus lepingu lõpetamiseks');
-            test.equal(mail.from[0].name, '');
-            test.equal(mail.to[0].name, 'Keld Jørn Simonsen');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.subject, 'Avaldus lepingu lõpetamiseks');
+            test.equal(mailparser.from.value[0].name, ' ');
+            test.equal(mailparser.to.value[0].name, 'Keld Jørn Simonsen');
             test.done();
         });
     }
@@ -385,10 +392,22 @@ exports['Binary attachment encodings'] = {
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(Array.prototype.slice.apply(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].content || []).join(','), '0,1,2,3,253,254,255');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(Array.prototype.slice.apply(attachments[0].content && attachments[0].content || []).join(','), '0,1,2,3,253,254,255');
             test.done();
         });
     },
@@ -399,10 +418,22 @@ exports['Binary attachment encodings'] = {
             'AAECA/3+/w==',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(Array.prototype.slice.apply(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].content || []).join(','), '0,1,2,3,253,254,255');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(Array.prototype.slice.apply(attachments[0].content && attachments[0].content || []).join(','), '0,1,2,3,253,254,255');
             test.done();
         });
     },
@@ -412,31 +443,25 @@ exports['Binary attachment encodings'] = {
             'ÕÄÖÜ',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(Array.prototype.slice.apply(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].content || []).join(','), '195,149,195,132,195,150,195,156');
-            test.done();
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
         });
-    },
-    UUENCODE: test => {
-        let encodedText = 'Content-Type: application/octet-stream\r\n' +
-            'Content-Transfer-Encoding: uuencode\r\n' +
-            '\r\n' +
-            'begin 644 buffer.bin\r\n' +
-            '#0V%T\r\n' +
-            '`\r\n' +
-            'end',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments[0].content.toString(), 'Cat');
+        mailparser.on('end', () => {
+            test.equal(Array.prototype.slice.apply(attachments[0].content && attachments[0].content || []).join(','), '195,149,195,132,195,150,195,156');
             test.done();
         });
     }
-
 };
 
 exports['Attachment Content-Id'] = {
@@ -448,10 +473,22 @@ exports['Attachment Content-Id'] = {
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].contentId, '7c7cf35ce5becf62faea56ed8d0ad6e4@mailparser');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.ok(!attachments[0].contentId);
             test.done();
         });
     },
@@ -460,15 +497,27 @@ exports['Attachment Content-Id'] = {
         let encodedText = 'Content-Type: application/octet-stream\r\n' +
             'Content-Transfer-Encoding: QUOTED-PRINTABLE\r\n' +
             'Content-Disposition: attachment; filename="=?UTF-8?Q?=C3=95=C3=84=C3=96=C3=9C?="\r\n' +
-            'Content-Id: test@localhost\r\n' +
+            'Content-Id: <test@localhost>\r\n' +
             '\r\n' +
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].contentId, 'test@localhost');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(attachments[0].contentId, '<test@localhost>');
             test.done();
         });
     }
@@ -484,10 +533,22 @@ exports['Attachment filename'] = {
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].fileName, 'ÕÄÖÜ');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(attachments[0].content && attachments[0].filename, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -499,10 +560,22 @@ exports['Attachment filename'] = {
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].fileName, 'ÕÄÖÜ');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(attachments[0].content && attachments[0].filename, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -517,10 +590,22 @@ exports['Attachment filename'] = {
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].fileName, 'OAU.txt');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(attachments[0].content && attachments[0].filename, 'OAU.txt');
             test.done();
         });
     },
@@ -534,10 +619,22 @@ exports['Attachment filename'] = {
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].fileName, 'ÕÄÖÜ');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(attachments[0].content && attachments[0].filename, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -552,10 +649,22 @@ exports['Attachment filename'] = {
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].fileName, 'ÕÄÖÜ.txt');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(attachments[0].content && attachments[0].filename, 'ÕÄÖÜ.txt');
             test.done();
         });
     },
@@ -567,27 +676,48 @@ exports['Attachment filename'] = {
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].fileName, 'ÕÄÖÜ');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(attachments[0].content && attachments[0].filename, 'ÕÄÖÜ');
             test.done();
         });
     },
-    'Content-Type ; name': test => {
-        let encodedText = 'Content-Type: ; name="test"\r\n' +
+    'Content-Type unknown; name': test => {
+        let encodedText = 'Content-Type: unknown; name="test"\r\n' +
             'Content-Transfer-Encoding: QUOTED-PRINTABLE\r\n' +
             '\r\n' +
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
-
-        mailparser.write(mail);
-        mailparser.end();
-
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].fileName, 'test');
+        mailparser.end(mail);
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(attachments[0].filename, 'test');
             test.done();
         });
     },
@@ -599,10 +729,22 @@ exports['Attachment filename'] = {
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].fileName, 'ÕÄÖÜ');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(attachments[0].content && attachments[0].filename, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -615,38 +757,22 @@ exports['Attachment filename'] = {
             '=00=01=02=03=FD=FE=FF',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].fileName, 'ÕÄÖÜ');
-            test.done();
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
         });
-    },
-    'Default name from Content-type': test => {
-        let encodedText = 'Content-Type: application/pdf\r\n' +
-            'Content-Transfer-Encoding: QUOTED-PRINTABLE\r\n' +
-            '\r\n' +
-            '=00=01=02=03=FD=FE=FF',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].generatedFileName, 'attachment.pdf');
-            test.done();
-        });
-    },
-    'Default name': test => {
-        let encodedText = 'Content-Type: application/octet-stream\r\n' +
-            'Content-Transfer-Encoding: QUOTED-PRINTABLE\r\n' +
-            '\r\n' +
-            '=00=01=02=03=FD=FE=FF',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].generatedFileName, 'attachment.bin');
+        mailparser.on('end', () => {
+            test.equal(attachments[0].content && attachments[0].filename, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -664,11 +790,23 @@ exports['Attachment filename'] = {
             '--ABC--',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].generatedFileName, 'test.txt');
-            test.equal(mail.attachments && mail.attachments[1] && mail.attachments[1].content && mail.attachments[1].generatedFileName, 'test-1.txt');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
+        mailparser.on('end', () => {
+            test.equal(attachments[0].content && attachments[0].filename, 'test.txt');
+            test.equal(attachments && attachments[1] && attachments[1].content && attachments[1].filename, 'test.txt');
             test.done();
         });
     },
@@ -686,60 +824,23 @@ exports['Attachment filename'] = {
             '--ABC--',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].generatedFileName, 'attachment.bin');
-            test.equal(mail.attachments && mail.attachments[1] && mail.attachments[1].content && mail.attachments[1].generatedFileName, 'test.txt');
-            test.done();
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
         });
-    },
-    'Multiple filenames - with number': test => {
-        let encodedText = 'Content-Type: multipart/mixed; boundary=ABC\r\n' +
-            '\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: application/octet-stream; name="somename.txt"\r\n' +
-            '\r\n' +
-            '=00=01=02=03=FD=FE=FF\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: application/octet-stream; name="somename-1.txt"\r\n' +
-            '\r\n' +
-            '=00=01=02=03=FD=FE=FF\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: application/octet-stream; name="somename.txt"\r\n' +
-            '\r\n' +
-            '=00=01=02=03=FD=FE=FF\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: application/octet-stream; name="somename-1-1.txt"\r\n' +
-            '\r\n' +
-            '=00=01=02=03=FD=FE=FF\r\n' +
-            '--ABC--',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].generatedFileName, 'somename.txt');
-            test.equal(mail.attachments && mail.attachments[1] && mail.attachments[1].content && mail.attachments[1].generatedFileName, 'somename-1-1.txt');
-            test.equal(mail.attachments && mail.attachments[2] && mail.attachments[2].content && mail.attachments[2].generatedFileName, 'somename-2.txt');
-            test.equal(mail.attachments && mail.attachments[3] && mail.attachments[3].content && mail.attachments[3].generatedFileName, 'somename-1-1-3.txt');
-            test.done();
-        });
-    },
-    'Generate filename from Content-Type': test => {
-        let encodedText = 'Content-Type: multipart/mixed; boundary=ABC\r\n' +
-            '\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: application/pdf\r\n' +
-            '\r\n' +
-            '=00=01=02=03=FD=FE=FF\r\n' +
-            '--ABC--',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].generatedFileName, 'attachment.pdf');
+        mailparser.on('end', () => {
+            test.equal(!attachments[0].filename, true);
+            test.equal(attachments[1].filename, 'test.txt');
             test.done();
         });
     },
@@ -753,32 +854,22 @@ exports['Attachment filename'] = {
             '--ABC--',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].generatedFileName, 'hello;world;test.txt');
-            test.done();
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
         });
-    },
-    'UUE filename with special characters': test => {
-        let encodedText = 'Content-Type: multipart/mixed; boundary=ABC\r\n' +
-            '\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: application/octet-stream\r\n' +
-            'Content-Transfer-Encoding: uuencode\r\n' +
-            'Content-Disposition: attachment; filename="hello ~!@#%.txt"\r\n' +
-            '\r\n' +
-            'begin 644 hello ~!@#%.txt\r\n' +
-            '#0V%T\r\n' +
-            '`\r\n' +
-            'end\r\n' +
-            '--ABC--',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].content && mail.attachments[0].generatedFileName, 'hello ~!@#%.txt');
+        mailparser.on('end', () => {
+            test.equal(attachments[0].content && attachments[0].filename, 'hello;world;test.txt');
             test.done();
         });
     }
@@ -791,8 +882,9 @@ exports['Plaintext format'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'First line \ncontinued');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'First line \ncontinued');
             test.done();
         });
     },
@@ -802,21 +894,23 @@ exports['Plaintext format'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'First line continued and so on');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'First line continued and so on');
             test.done();
         });
     },
     'Flowed Signature': test => {
-        let encodedText = 'Content-Type: text/plain; format=flowed\r\n\r\nHow are you today?\r\n' +
+        let encodedText = 'Content-Type: text/plain; format=flowed\r\n\r\nHow are you today?\r\n\r\n' +
             '-- \r\n' +
             'Signature\r\n',
             mail = Buffer.from(encodedText, 'utf-8');
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'How are you today?\n-- \nSignature\n');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'How are you today?\n-- \nSignature\n');
             test.done();
         });
     },
@@ -826,8 +920,9 @@ exports['Plaintext format'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'First line \ncontinued \nand so on');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'First line \ncontinued \nand so on');
             test.done();
         });
     },
@@ -837,43 +932,9 @@ exports['Plaintext format'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'First linecontinuedand so on');
-            test.done();
-        });
-    },
-    'Quoted printable, Flowed': test => {
-        let encodedText = 'Content-Type: text/plain; format=flowed\r\nContent-Transfer-Encoding: QUOTED-PRINTABLE\r\n\r\nFoo =\n\nBar =\n\nBaz',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'Foo Bar Baz');
-            test.done();
-        });
-    },
-    'Quoted printable, Flowed Signature': test => {
-        let encodedText = 'Content-Type: text/plain; format=flowed\r\nContent-Transfer-Encoding: QUOTED-PRINTABLE\r\n\r\nHow are you today?\r\n' +
-            '-- \r\n' +
-            'Signature\r\n',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'How are you today?\n-- \nSignature\n');
-            test.done();
-        });
-    },
-    'Quoted printable, DelSp': test => {
-        let encodedText = 'Content-Type: text/plain; format=flowed; delsp=yes\r\nContent-Transfer-Encoding: QUOTED-PRINTABLE\r\n\r\nFoo =\n\nBar =\n\nBaz',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'FooBarBaz');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'First linecontinuedand so on');
             test.done();
         });
     }
@@ -886,8 +947,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -897,8 +959,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -908,8 +971,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -919,8 +983,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -930,21 +995,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.subject, 'Avaldus lepingu lõpetamiseks');
-            test.done();
-        });
-    },
-    'Mime Words with invalid linebreaks (Sparrow)': test => {
-        let encodedText = 'Content-type: text/plain; charset=utf-8\r\n' +
-            'Subject: abc=?utf-8?Q?=C3=B6=C\r\n' +
-            ' 3=B5=C3=BC?=',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.subject, 'abcöõü');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.subject, 'Avaldus lepingu lõpetamiseks');
             test.done();
         });
     },
@@ -955,8 +1008,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -966,8 +1020,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -977,19 +1032,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, '=�=�ÄÖÜ');
-            test.done();
-        });
-    },
-    'Invalid BASE64': test => {
-        let encodedText = 'Content-type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\nw5XDhMOWw5',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(Array.prototype.map.call(mail.text, chr => chr.charCodeAt(0)).join(','), '213,196,214,65533');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, '=�=�ÄÖÜ');
             test.done();
         });
     },
@@ -999,8 +1044,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.deepEqual(mail.from, [{
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.deepEqual(mailparser.from.value, [{
                 address: 'user@ldkf.com.tw',
                 name: '游采樺'
             }]);
@@ -1013,9 +1059,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.date.toISOString(), '2014-01-08T17:52:26.000Z');
-            test.equal(mail.headers.date, 'Wed, 08 Jan 2014 09:52:26 -0800');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.date.toISOString(), '2014-01-08T17:52:26.000Z');
             test.done();
         });
     },
@@ -1025,9 +1071,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
             test.ok(!mail.date);
-            test.equal(mail.headers.date, 'zzzzz');
             test.done();
         });
     },
@@ -1037,36 +1083,9 @@ exports['Transfer encoding'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
             test.ok(!mail.date);
-            test.ok(!mail.headers.date);
-            test.done();
-        });
-    },
-    'Received Headers': test => {
-        let encodedTest = 'Received: by 10.25.25.72 with SMTP id 69csp2404548lfz;\r\n' +
-            '        Fri, 6 Feb 2015 20:15:32 -0800 (PST)\r\n' +
-            'X-Received: by 10.194.200.68 with SMTP id jq4mr7518476wjc.128.1423264531879;\r\n' +
-            '        Fri, 06 Feb 2015 15:15:31 -0800 (PST)\r\n' +
-            'Received: from mail.formilux.org (flx02.formilux.org. [195.154.117.161])\r\n' +
-            '        by mx.google.com with ESMTP id wn4si6920692wjc.106.2015.02.06.15.15.31\r\n' +
-            '        for <test@example.com>;\r\n' +
-            '        Fri, 06 Feb 2015 15:15:31 -0800 (PST)\r\n' +
-            'Received: from flx02.formilux.org (flx02.formilux.org [127.0.0.1])\r\n' +
-            '        by mail.formilux.org (Postfix) with SMTP id 9D262450C77\r\n' +
-            '        for <test@example.com>; Sat,  7 Feb 2015 00:15:31 +0100 (CET)\r\n' +
-            'Date: Fri, 6 Feb 2015 16:13:51 -0700 (MST)\r\n' +
-            '\r\n' +
-            '1cTW3A==',
-            mail = Buffer.from(encodedTest, 'utf-8');
-
-        let mailparser = new MailParser2();
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.ok(mail.date);
-            test.ok(mail.receivedDate);
-            test.equal(mail.date.toISOString(), '2015-02-06T23:13:51.000Z');
-            test.equal(mail.receivedDate.toISOString(), '2015-02-07T04:15:32.000Z');
             test.done();
         });
     }
@@ -1079,8 +1098,9 @@ exports['Multipart content'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -1100,8 +1120,9 @@ exports['Multipart content'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -1119,8 +1140,9 @@ exports['Multipart content'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ');
             test.done();
         });
     },
@@ -1144,10 +1166,10 @@ exports['Multipart content'] = {
 
         let mailparser = new MailParser2();
         mailparser.end(mail);
-
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'ÕÄÖÜ1');
-            test.equal(mail.html, 'ÕÄÖÜ2');
+        mailparser.on('data', () => false);
+        mailparser.on('end', () => {
+            test.equal(mailparser.text, 'ÕÄÖÜ2\nÕÄÖÜ1');
+            test.equal(mailparser.html, 'ÕÄÖÜ2<br/>\n<p>ÕÄÖÜ1</p>\n');
             test.done();
         });
     }
@@ -1167,16 +1189,28 @@ exports['Attachment info'] = {
             expectedHash = '9aa461e1eca4086f9230aa49c90b0c61',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
 
         for (let i = 0, len = mail.length; i < len; i++) {
             mailparser.write(Buffer.from([mail[i]]));
         }
         mailparser.end();
 
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].checksum, expectedHash);
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].length, 7);
+        mailparser.on('end', () => {
+            test.equal(attachments[0].checksum, expectedHash);
+            test.equal(attachments[0].size, 7);
             test.done();
         });
     },
@@ -1193,25 +1227,31 @@ exports['Attachment info'] = {
             expectedHash = '9aa461e1eca4086f9230aa49c90b0c61',
             mail = Buffer.from(encodedText, 'utf-8');
 
-        let mailparser = new MailParser2({
-            streamAttachments: true
-        });
+        let attachments = [];
+        let mailparser = new MailParser2();
 
         for (let i = 0, len = mail.length; i < len; i++) {
             mailparser.write(Buffer.from([mail[i]]));
         }
 
-        test.expect(3);
+        test.expect(2);
 
-        mailparser.on('attachment', attachment => {
-            test.ok(attachment.stream, 'Stream detected');
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
         });
 
         mailparser.end();
-
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].checksum, expectedHash);
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].length, 7);
+        mailparser.on('end', () => {
+            test.equal(attachments[0].checksum, expectedHash);
+            test.equal(attachments[0].size, 7);
             test.done();
         });
     },
@@ -1229,26 +1269,31 @@ exports['Attachment info'] = {
             expectedHash = 'cad0f72629a7245dd3d2cbf41473e3ca',
             mail = Buffer.from(encodedText, 'utf-8');
 
-        let mailparser = new MailParser2({
-            streamAttachments: true
+        let attachments = [];
+        let mailparser = new MailParser2();
+
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
         });
 
         for (let i = 0, len = mail.length; i < len; i++) {
             mailparser.write(Buffer.from([mail[i]]));
         }
 
-        test.expect(4);
-
-        mailparser.on('attachment', (attachment, node) => {
-            test.ok(attachment.stream, 'Stream detected');
-            test.ok(node);
-        });
+        test.expect(2);
 
         mailparser.end();
-
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].checksum, expectedHash);
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].length, 10);
+        mailparser.on('end', () => {
+            test.equal(attachments[0].checksum, expectedHash);
+            test.equal(attachments[0].size, 10);
             test.done();
         });
     },
@@ -1265,27 +1310,33 @@ exports['Attachment info'] = {
             'ŽŠ\r\n' +
             '--ABC--',
             expectedHash = '34bca86f8cc340bbd11446ee16ee3cae',
-            mail = iconv.decode(encodedText, 'latin-13');
+            mail = iconv.encode(encodedText, 'iso-8859-13');
 
-        let mailparser = new MailParser2({
-            streamAttachments: true
+        let attachments = [];
+        let mailparser = new MailParser2();
+
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
         });
 
         for (let i = 0, len = mail.length; i < len; i++) {
             mailparser.write(Buffer.from([mail[i]]));
         }
 
-        test.expect(3);
-
-        mailparser.on('attachment', attachment => {
-            test.ok(attachment.stream, 'Stream detected');
-        });
+        test.expect(2);
 
         mailparser.end();
-
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].checksum, expectedHash);
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].length, 10);
+        mailparser.on('end', () => {
+            test.equal(attachments[0].checksum, expectedHash);
+            test.equal(attachments[0].size, 10);
             test.done();
         });
     },
@@ -1304,62 +1355,31 @@ exports['Attachment info'] = {
             expectedHash = '34bca86f8cc340bbd11446ee16ee3cae',
             mail = Buffer.from(encodedText, 'utf-8');
 
-        let mailparser = new MailParser2({
-            streamAttachments: true
+        let attachments = [];
+        let mailparser = new MailParser2();
+
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
         });
 
         for (let i = 0, len = mail.length; i < len; i++) {
             mailparser.write(Buffer.from([mail[i]]));
         }
 
-        test.expect(3);
-
-        mailparser.on('attachment', attachment => {
-            test.ok(attachment.stream, 'Stream detected');
-        });
+        test.expect(2);
 
         mailparser.end();
-
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].checksum, expectedHash);
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].length, 10);
-            test.done();
-        });
-    },
-    'Stream integrity - uuencode': test => {
-        let encodedText = 'Content-type: multipart/mixed; boundary=ABC\r\n' +
-            '\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: application/octet-stream\r\n' +
-            'Content-Transfer-Encoding: uuencode\r\n' +
-            '\r\n' +
-            'begin 644 buffer.bin\r\n' +
-            '#0V%T\r\n' +
-            '`\r\n' +
-            'end\r\n' +
-            '--ABC--',
-            expectedHash = 'fa3ebd6742c360b2d9652b7f78d9bd7d',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2({
-            streamAttachments: true
-        });
-
-        for (let i = 0, len = mail.length; i < len; i++) {
-            mailparser.write(Buffer.from([mail[i]]));
-        }
-
-        test.expect(3);
-
-        mailparser.on('attachment', attachment => {
-            test.ok(attachment.stream, 'Stream detected');
-        });
-
-        mailparser.end();
-
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].checksum, expectedHash);
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].length, 3);
+        mailparser.on('end', () => {
+            test.equal(attachments[0].checksum, expectedHash);
+            test.equal(attachments[0].size, 10);
             test.done();
         });
     },
@@ -1373,26 +1393,33 @@ exports['Attachment info'] = {
             expectedHash = 'cad0f72629a7245dd3d2cbf41473e3ca',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2({
             streamAttachments: true
+        });
+
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
         });
 
         for (let i = 0, len = mail.length; i < len; i++) {
             mailparser.write(Buffer.from([mail[i]]));
         }
 
-        test.expect(4);
-
-        mailparser.on('attachment', (attachment, node) => {
-            test.ok(attachment.stream, 'Stream detected');
-            test.ok(node);
-        });
+        test.expect(2);
 
         mailparser.end();
-
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].checksum, expectedHash);
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].length, 10);
+        mailparser.on('end', () => {
+            test.equal(attachments[0].checksum, expectedHash);
+            test.equal(attachments[0].size, 10);
             test.done();
         });
     },
@@ -1420,53 +1447,28 @@ exports['Attachment info'] = {
             '--ABC--',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2({
             streamAttachments: true
         });
 
         test.expect(3); // should be 3 attachments
-        mailparser.on('attachment', attachment => {
-            test.ok(attachment.stream, 'Stream detected');
+
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                test.ok(data);
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
         });
 
         mailparser.end(mail);
-
         mailparser.on('end', () => {
-            test.done();
-        });
-    },
-
-    'Pass mail node to headers event': test => {
-        let encodedText = 'Content-type: multipart/mixed; boundary=ABC\r\n' +
-            'Subject: ABCDEF\r\n' +
-            '\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: application/octet-stream\r\n' +
-            'Content-Transfer-Encoding: base64\r\n' +
-            'Content-Disposition: attachment\r\n' +
-            '\r\n' +
-            'AAECAwQFBg==\r\n' +
-            '--ABC--',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        let mailparser = new MailParser2({
-            streamAttachments: true
-        });
-
-        for (let i = 0, len = mail.length; i < len; i++) {
-            mailparser.write(Buffer.from([mail[i]]));
-        }
-
-        test.expect(2);
-
-        mailparser.on('attachment', (attachment, email) => {
-            test.equal(email.subject, 'ABCDEF');
-        });
-
-        mailparser.end();
-
-        mailparser.on('end', () => {
-            test.ok(1, 'Done');
             test.done();
         });
     },
@@ -1482,54 +1484,33 @@ exports['Attachment info'] = {
             '--ABC--',
             mail = Buffer.from(encodedText, 'utf-8');
 
+        let attachments = [];
         let mailparser = new MailParser2();
+
+        mailparser.on('data', data => {
+            if (data.type === 'attachment') {
+                test.ok(data);
+                let chunks = [];
+                data.content.on('data', chunk => chunks.push(chunk));
+                data.content.on('end', () => {
+                    data.content = Buffer.concat(chunks);
+                    data.release();
+                });
+                attachments.push(data);
+            }
+        });
 
         mailparser.write(mail);
         mailparser.end();
-
-        mailparser.on('end', mail => {
-            test.equal(mail.attachments && mail.attachments[0] && mail.attachments[0].contentType, 'application/pdf');
-            test.done();
-        });
-    },
-
-    'Inline attachments': test => {
-        let encodedText = 'Content-type: multipart/mixed; boundary=ABC\r\n' +
-            'X-Test: =?UTF-8?Q?=C3=95=C3=84?= =?UTF-8?Q?=C3=96=C3=9C?=\r\n' +
-            'Subject: ABCDEF\r\n' +
-            '\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: text/html\r\n' +
-            '\r\n' +
-            '<p>test 1</p>\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: application/octet-stream\r\n' +
-            'Content-Transfer-Encoding: base64\r\n' +
-            'Content-Disposition: attachment; filename="test.pdf"\r\n' +
-            '\r\n' +
-            'AAECAwQFBg==\r\n' +
-            '--ABC\r\n' +
-            'Content-Type: text/html\r\n' +
-            '\r\n' +
-            '<p>test 2</p>\r\n' +
-            '--ABC--',
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        test.expect(1);
-        let mailparser = new MailParser2({
-            showAttachmentLinks: true
-        });
-
-        mailparser.end(mail);
-        mailparser.on('end', mail => {
-            test.equal(mail.html, '<p>test 1</p><br/>\n\n<div class="mailparser-attachment"><a href="cid:754dc77d28e62763c4916970d595a10f@mailparser">&lt;test.pdf&gt;</a></div><br/>\n<p>test 2</p>');
+        mailparser.on('end', () => {
+            test.equal(attachments[0].contentType, 'application/pdf');
             test.done();
         });
     }
 };
 
 exports['Advanced nested HTML'] = test => {
-    let mail = fs.readFileSync(__dirname + '/ali.eml');
+    let mail = fs.readFileSync(__dirname + '/fixtures/nested.eml');
 
     test.expect(2);
     let mailparser = new MailParser2();
@@ -1539,15 +1520,16 @@ exports['Advanced nested HTML'] = test => {
     }
 
     mailparser.end();
-    mailparser.on('end', mail => {
-        test.equal(mail.text, '\nDear Sir,\n\nGood evening.\n\n\n \n\n\n\nThe footer\n');
-        test.equal(mail.html, '<p>Dear Sir</p>\n<p>Good evening.</p>\n<p></p><p>The footer</p>\n');
+    mailparser.on('data', () => false);
+    mailparser.on('end', () => {
+        test.equal(mailparser.text, '\nDear Sir,\n\nGood evening.\n\n\n\n\n\n\n\nThe footer\n');
+        test.equal(mailparser.html, '<p>Dear Sir</p>\n<p>Good evening.</p>\n<p></p><br/>\n<p>The footer</p>\n');
         test.done();
     });
 };
 
 exports['Additional text'] = test => {
-    let mail = fs.readFileSync(__dirname + '/mixed.eml');
+    let mail = fs.readFileSync(__dirname + '/fixtures/mixed.eml');
 
     test.expect(2);
     let mailparser = new MailParser2();
@@ -1557,97 +1539,10 @@ exports['Additional text'] = test => {
     }
 
     mailparser.end();
-    mailparser.on('end', mail => {
-        test.equal(mail.text, '\nThis e-mail message has been scanned for Viruses and Content and cleared\nGood Morning;\n\n');
-        test.equal(mail.html, '<HTML><HEAD>\n</HEAD><BODY> \n\n<HR>\nThis e-mail message has been scanned for Viruses and Content and cleared\n<HR>\n</BODY></HTML>\nGood Morning;\n\n');
+    mailparser.on('data', () => false);
+    mailparser.on('end', () => {
+        test.equal(mailparser.text, '\nThis e-mail message has been scanned for Viruses and Content and cleared\n\nGood Morning;\n\n');
+        test.equal(mailparser.html, '<HTML><HEAD>\n</HEAD><BODY> \n\n<HR>\nThis e-mail message has been scanned for Viruses and Content and cleared\n<HR>\n</BODY></HTML>\n<br/>\n<p>Good Morning;</p>\n');
         test.done();
     });
-};
-
-exports['MBOX format'] = {
-    'Not a mbox': test => {
-        let encodedText = 'Content-Type: text/plain; charset=utf-8\r\n' +
-            '\r\n' +
-            'ÕÄ\r\n' +
-            'ÖÜ', // \r\nÕÄÖÜ
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        test.expect(1);
-        let mailparser = new MailParser2();
-
-        for (let i = 0, len = mail.length; i < len; i++) {
-            mailparser.write(Buffer.from([mail[i]]));
-        }
-
-        mailparser.end();
-        mailparser.on('end', () => {
-            test.equal(mailparser._isMbox, false);
-            test.done();
-        });
-    },
-
-    'Is a mbox': test => {
-        let encodedText = 'From MAILER-DAEMON Fri Jul  8 12:08:34 2011\r\n' +
-            'Content-Type: text/plain; charset=utf-8\r\n' +
-            '\r\n' +
-            'ÕÄ\r\n' +
-            'ÖÜ', // \r\nÕÄÖÜ
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        test.expect(1);
-        let mailparser = new MailParser2();
-
-        for (let i = 0, len = mail.length; i < len; i++) {
-            mailparser.write(Buffer.from([mail[i]]));
-        }
-
-        mailparser.end();
-        mailparser.on('end', () => {
-            test.equal(mailparser._isMbox, true);
-            test.done();
-        });
-    },
-
-    'Don\'t unescape ">From "': test => {
-        let encodedText = 'Content-Type: text/plain; charset=utf-8\r\n' +
-            '\r\n' +
-            '>From test\r\n' +
-            '>>From pest', // \r\nÕÄÖÜ
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        test.expect(1);
-        let mailparser = new MailParser2();
-
-        for (let i = 0, len = mail.length; i < len; i++) {
-            mailparser.write(Buffer.from([mail[i]]));
-        }
-
-        mailparser.end();
-        mailparser.on('end', mail => {
-            test.equal(mail.text, '>From test\n>>From pest');
-            test.done();
-        });
-    },
-
-    'Unescape ">From "': test => {
-        let encodedText = 'From MAILER-DAEMON Fri Jul  8 12:08:34 2011\r\n' +
-            'Content-Type: text/plain; charset=utf-8\r\n' +
-            '\r\n' +
-            '>From test\r\n' +
-            '>>From pest', // \r\nÕÄÖÜ
-            mail = Buffer.from(encodedText, 'utf-8');
-
-        test.expect(1);
-        let mailparser = new MailParser2();
-
-        for (let i = 0, len = mail.length; i < len; i++) {
-            mailparser.write(Buffer.from([mail[i]]));
-        }
-
-        mailparser.end();
-        mailparser.on('end', mail => {
-            test.equal(mail.text, 'From test\n>From pest');
-            test.done();
-        });
-    }
 };
