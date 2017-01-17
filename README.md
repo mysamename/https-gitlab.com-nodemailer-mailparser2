@@ -81,6 +81,45 @@ Address objects have the following structure:
 }
 ```
 
+### headers Map
+
+`headers` is a Map with lowercase header keys. So if you want to check for the Subject: header then you can do it like this:
+
+```javascript
+if (mail.headers.has('subject')) {
+    console.log(mail.headers.get('subject'));
+}
+```
+
+The format of a header depends on the specific key. For most header keys the value is either a string (a single header) or an array of strings (multiple headers with the same key were found).
+
+Special header keys are the following:
+
+1. All address headers are converted into address objects
+  * **from**
+  * **to**
+  * **cc**
+  * **bcc**
+  * **sender**
+  * **reply-to**
+  * **delivered-to**
+  * **return-path**
+2. All different priority headers are converted into **priority** with the following values:
+  * **'high'**
+  * **'normal'**
+  * **'low'**
+3. **references** is a string if only a single reference-id exists or an array if multiple ids exist
+4. **date** value is a Date object
+5. The following headers are parsed into structured objects, where `value` property includes the main value as string and `params` property holds an object of additional arguments as key-value pairs
+  * **content-type**
+  * **content-disposition**
+  * **dkim-signature**
+
+Some headers are also automaticaly mime-word decoded
+
+  * all address headers (name parts and punycode encoded domains are converted to unicode)
+  * **subject** is converted to unicode
+
 ### attachment object
 
 Attachment objects have the following structure:
@@ -159,8 +198,10 @@ parser.on('data', data => {
 
 ## Issues
 
-Charset decoding is handled using [node-iconv](https://github.com/ashtuchkin/iconv-lite) that is missing some charsets.
+Charset decoding is handled using [iconv-lit](https://github.com/ashtuchkin/iconv-lite) that is missing some charsets, especially some Japanese ones. If required then it would be possible to switch to native iconv bindings with [node-iconv](https://github.com/bnoordhuis/node-iconv) to handle these missing charsets but for now this option is not used for easier packaging.
 
 ## License
+
+Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) ([details](https://creativecommons.org/licenses/by-nc-sa/4.0/)). Commercial licenses available upon request.
 
 © 2017 Kreata OÜ

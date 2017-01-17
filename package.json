@@ -1,13 +1,13 @@
 {
   "name": "@nodemailer/mailparser2",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Parse emails",
   "main": "index.js",
   "scripts": {
     "test": "grunt"
   },
   "author": "Andris Reinman",
-  "license": "UNLICENSED",
+  "license": "CC-BY-NC-SA-4.0",
   "dependencies": {
     "addressparser": "1.0.1",
     "he": "1.1.0",
@@ -18,12 +18,14 @@
     "marked": "0.3.6"
   },
   "devDependencies": {
+    "eslint-config-nodemailer": "^1.0.0",
     "grunt": "^1.0.1",
     "grunt-cli": "^1.2.0",
     "grunt-contrib-nodeunit": "^1.0.0",
     "grunt-eslint": "^19.0.0",
-    "eslint-config-nodemailer": "^1.0.0",
     "libbase64": "^0.1.0",
-    "libqp": "^1.1.0"
+    "libqp": "^1.1.0",
+    "mailparser": "^0.6.1",
+    "random-message": "^1.1.0"
   }
 }

@@ -4,10 +4,10 @@
 
 const util = require('util');
 const fs = require('fs');
-const Mailparser2 = require('../lib/mailparser2.js');
+const Mailparser2 = require('../lib/mail-parser2.js');
 
 let parser = new Mailparser2();
-let input = fs.createReadStream(__dirname + '/nodemailer.eml');
+let input = fs.createReadStream(__dirname + '/test.eml');
 
 let attachments = [];
 
@@ -27,7 +27,6 @@ parser.on('data', data => {
     }
 
     if (data.type === 'attachment') {
-        console.log('ATTACHMENT');
         attachments.push(data);
         data.chunks = [];
         data.chunklen = 0;
