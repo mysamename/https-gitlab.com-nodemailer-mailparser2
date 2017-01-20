@@ -1,6 +1,6 @@
 {
   "name": "@nodemailer/mailparser2",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Parse emails",
   "main": "index.js",
   "scripts": {
