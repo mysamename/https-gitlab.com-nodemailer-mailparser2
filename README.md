@@ -2,6 +2,8 @@
 
 Advanced email parser for Node.js. Everything is handled as a stream which should make it able to parse even very large messages (100MB+) with relatively low overhead. This project is somewhat similar to [Mailparser](https://github.com/andris9/mailparser) even though it's a complete rewrite.
 
+**Mailparser2** is part of **Nodemailer PRO** bundle. You can use it on its own under restrictive [CC-BY-NC-SA-4.0](http://nodemailer.com/LICENSE) license. For more permissive commercial license see the [Nodemailer PRO offering](https://nodemailer.com/about/pricing/).
+
 The module exposes two separate modes, a lower level `MailParser2` class and `simpleParser` function. The latter is simpler to use (hence the name) but is less resource efficient as it buffers attachment contents in memory.
 
 ## Install
